@@ -1,7 +1,7 @@
 from pydoc import render_doc
 from tkinter import E
 from django.shortcuts import render, redirect
-from products.models import Product, SizeVariant
+from products.models import Product, SizeVariant, Review
 from accounts.models import Cart, CartItems
 from django.http import HttpResponseRedirect
 
@@ -16,6 +16,30 @@ def get_product(request , slug):
             context['selected_size']=size
             context['updated_price']=price
             print(price)
+        
+        
+        if request.method == 'POST':
+            rating = request.POST.get('rating', 3)
+            content = request.POST.get('content', '')
+
+            if content:
+                reviews = Review.objects.filter(created_by=request.user, product=product)
+
+                if reviews.count() > 0:
+                    review = reviews.first()
+                    review.rating = rating
+                    review.content = content
+                    review.save()
+                else:
+                    review = Review.objects.create(
+                        product=product,
+                        rating=rating,
+                        content=content,
+                        created_by=request.user
+                    )
+
+            return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
+
         return render(request  , 'product/product.html' , context = context)
         # return render(request  , 'product/product.html' , context = {'product':product})
 

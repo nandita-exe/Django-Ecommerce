@@ -2,6 +2,7 @@ from django.db import models
 from base.models import BaseModel
 from django.utils.text import slugify
 from django.utils.html import mark_safe
+from django.contrib.auth.models import User
 
 
 class Category(BaseModel):
@@ -57,6 +58,17 @@ class Product(BaseModel):
     
     def get_product_price_by_size(self, size):
         return self.price + SizeVariant.objects.get(size_name=size).price
+    
+    def get_rating(self):
+        reviews_total = 0
+
+        for review in self.reviews.all():
+            reviews_total += review.rating
+        
+        if reviews_total > 0:
+            return reviews_total / self.reviews.count()
+        
+        return 0
 
 
 
@@ -73,3 +85,11 @@ class Coupon(BaseModel):
     is_expired = models.BooleanField(default=False)
     discount_amount = models.IntegerField(default=False)
     minimum_amount = models.IntegerField(default=500)
+
+
+class Review(models.Model):
+    product = models.ForeignKey(Product, related_name='reviews', on_delete=models.CASCADE)
+    rating = models.IntegerField(default=3)
+    content = models.TextField()
+    created_by = models.ForeignKey(User, related_name='reviews', on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)

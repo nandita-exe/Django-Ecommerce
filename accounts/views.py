@@ -7,7 +7,7 @@ from django.contrib.auth import authenticate , login , logout
 from django.http import HttpResponseRedirect,HttpResponse
 # Create your views here.
 from .models import Profile
-from products.models import Product, SizeVariant, Coupon
+from products.models import Product, SizeVariant, Coupon, ProductImage
 from accounts.models import Cart, CartItems
 import razorpay
 from django.conf import settings
@@ -16,7 +16,7 @@ from base.helpers import save_pdf
 from base.emails import send_invoice
 # from django.core.urlresolvers import reverse
 from django.urls import reverse
-
+from django.contrib.auth.decorators import login_required
 
 def login_page(request):
     
@@ -92,9 +92,12 @@ def activate_email(request , email_token):
         return redirect('/')
     except Exception as e:
         return HttpResponse('Invalid Email token')
-    
+
+
+@login_required(login_url='login')
 def add_to_cart(request, uid):
     variant=request.GET.get('variant')
+    quantity = request.GET.get('quantity')
     product=Product.objects.get(uid=uid)
     user = request.user
     cart, _ = Cart.objects.get_or_create(user = user, is_paid=False)
@@ -106,8 +109,27 @@ def add_to_cart(request, uid):
         cart_item.size_variant=size_variant
         cart_item.save()
         print(cart_item)
+    if quantity:
+        quantity = request.GET.get('quantity')
+        cart_item.quantity=quantity
+        cart_item.save()
+        print(cart_item)
     # print('done')
     return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
+
+def update_cart_item(request, uid):
+    quantity = request.GET.get('quantity')
+    # product=Product.objects.get(uid=uid)
+    cart_item = CartItems.objects.get(uid=uid)
+    if quantity:
+        quantity = request.GET.get('quantity')
+        cart_item.quantity=quantity
+        cart_item.save()
+        print(cart_item)
+    context={'cart_item':cart_item}
+    return HttpResponseRedirect(request.META['HTTP_REFERER'])
+    # return render(request,'accounts/update.html', context=context)
+
 
 def remove_cart_item(request, uid):
     try:
@@ -116,6 +138,7 @@ def remove_cart_item(request, uid):
     except Exception as e:
         print(e)
     return HttpResponseRedirect(request.META['HTTP_REFERER'])
+
 # def remove_cart_item(request, cart_item_uid):
 #     try: 
 #         cart_item=CartItems.objects.get(uid=cart_item_uid)
@@ -171,6 +194,9 @@ def cart(request):
     return render(request, 'accounts/cart.html', context)
     # context={'cart': Cart.objects.filter(is_paid=False, user=request.user)}
     # return render(request, 'accounts/cart.html', context)
+
+
+
 
 def remove_coupon(request, cart_id):
     cart = Cart.objects.get(uid=cart_id)

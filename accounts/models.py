@@ -33,7 +33,7 @@ class Cart(BaseModel):
         cart_items =self.cart_items.all()
         price= []
         for cart_item in cart_items:
-            price.append(cart_item.product.price)
+            price.append(cart_item.product.price*cart_item.quantity)
             if cart_item.color_variant:
                 color_variant_price= cart_item.color_variant.price
                 price.append(color_variant_price)
@@ -56,18 +56,10 @@ class CartItems (BaseModel):
     product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, blank=True)
     color_variant=models.ForeignKey(ColorVariant, on_delete=models.SET_NULL, null=True, blank=True)
     size_variant=models.ForeignKey(SizeVariant, on_delete=models.SET_NULL, null=True, blank=True)
+    quantity=models.IntegerField(default=1)
 
-    # def get_product_price(self):
-    #     price = [self.product.price]
-    #     if self.color_variant: 
-    #         color_variant_price = self.color_variant.price 
-    #         price.append(color_variant_price)
-    #     if self.size_variant:
-    #         size_variant_price=self.size_variant.price
-    #         price.append(size_variant_price)
-    #     return sum(price)
     def get_product_price(self):
-        price = [self.product.price]
+        price = [self.product.price*self.quantity]
 
         if self.color_variant:
             color_variant_price = self.color_variant.price
